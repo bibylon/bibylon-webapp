@@ -1,0 +1,232 @@
+Can you build a fully modern and attractive and smooth and personalised feeling webapp for the ai powered personalised education platform by following the below instruction?
+Project Title:
+“My AI Mentor – Personalized Competitive Exam Companion”
+
+📘 Project Overview:
+Design a modern, AI-powered exam preparation platform tailored for Indian students preparing for competitive exams like NEET, UPSC, SSC, etc.
+
+The platform acts as a personal mentor, delivering:
+
+AI-generated daily study plans
+
+Personalized content based on exam, performance, and preferences
+
+Daily Current Affairs and Vocabulary, complete with summaries, notes, and quizzes
+
+Adaptive quizzes, flashcards, and progress tracking
+
+A gamified experience with coins, badges, and streaks
+
+A floating AI assistant button available across all pages
+
+The interface must feel friendly, motivational, and intelligent, optimized for mobile-first, and must support long-term daily use.
+
+🎨 Design System Guidelines:
+Light, minimal layout with pastel backgrounds and card-based components
+
+Rounded corners, shadows, large tap targets
+
+Typography: Inter, Nunito, or Poppins
+
+Color-coded subject themes (e.g. Bio = green, Polity = red)
+
+Floating AI Mentor button (bottom right) on every screen
+
+Components must be mobile-first but responsive for desktop
+
+Friendly icons (bot mascot, student illustrations, books, flashcards, coins)
+
+📱 Pages to Design (13 Screens + Floating AI Button)
+1. Onboarding (3-Step Flow)
+Step 1: Name, Email/Phone, OTP
+
+Step 2: Exam Type, Strong/Weak Subjects, Study Time
+
+Step 3: Learning Style, Daily Study Time, Goal Date
+
+Show a step progress bar, icons for styles, soft illustrations
+
+2. Dashboard (AI Mentor Home)
+Greeting from AI + quick stats
+
+“Today’s Plan” card list
+
+Quick Actions: Ask AI, Take Quiz, Upload Notes, Flashcards
+
+Motivation Strip: Quote + Streak + Badges
+
+Progress Snapshot (completion %, accuracy trend)
+
+🧠 AI Mentor Button (FAB) visible at all times
+
+3. Study Planner
+Toggle: Weekly ↔ Daily View
+
+Calendar layout with daily completion %
+
+Daily view shows task cards (topic, time, subject)
+
+Mark Done / Missed / Reschedule
+
+Show AI suggestions for missed balance
+
+🧠 Floating AI button to "Adjust Plan"
+
+4. AI Mentor Chat
+Chat interface
+
+Input: Text, Voice, Image
+
+AI Responses: Cards with explanations
+
+Toggle buttons: Short Trick, Long Method, Simplify
+
+Pulls past context for user
+
+🧠 Always available (but dedicated full-screen here)
+
+5. Current Affairs (Corrected)
+Feed layout grouped by day (calendar tabs)
+
+Category filter (e.g., Polity, Economy, Environment)
+
+Card layout per news item:
+
+Title, Source, Date
+
+Quick Summary (all key points, neatly formatted)
+
+“Read Full” expands the content
+
+Buttons:
+
+Add to Notes
+
+Ask AI
+
+“Get Quiz for This” → MCQs specifically from this news item
+
+Tags for bookmarking, "Revise Later"
+
+6. Vocabulary Builder (Corrected)
+Daily Word Feed:
+
+Word, Meaning, Usage in Sentence, Mnemonic
+
+Voice Pronunciation
+
+“Add to Notes”, “Test Me Later”, “Use in AI Chat”
+
+Weekly/Monthly vocab quizzes auto-generate from saved vocab
+
+Categorize by difficulty (Basic, Moderate, Advanced)
+
+Option to attach vocab to saved categories (e.g., Economy, Essay)
+
+7. Quiz/Test Arena
+Quiz Setup: Choose type (Vocab, CA, Full Test)
+
+Pick Topics or “From Saved Content”
+
+Slider: Number of Questions
+
+Quiz View: Question, 4 options, Timer
+
+After Quiz: Score, Retry Wrong Answers, Flashcard from Mistakes
+
+🧠 “Review with AI” → ask mentor about any wrong question
+
+8. Notes Vault
+Tag-based smart note system
+
+Buckets: “Current Affairs”, “Vocab Vault”, “AI Mentor Notes”, “Mistakes”
+
+Each note card: title, content snippet, last updated, tags
+
+Action Buttons: “Update Info”, “Ask AI”, “Attach to Plan”
+
+Filter/Search by tag/date/source
+
+9. Flashcard Carousel
+Flip card animation
+
+Mark as “Learned”, “Revise Later”, “Difficult”
+
+Add to revision plan
+
+Pull cards from CA, Vocab, Mistakes, Uploaded Notes
+
+10. Analytics & Progress
+Subject heatmap (Completed, Pending, Missed)
+
+Accuracy chart
+
+AI Insights: “Try this topic again”, “You’re weak in Static GK”
+
+Daily/Weekly trend graph
+
+Gamified progress bar with rewards suggestion
+
+11. Gamification & Rewards
+Coin Wallet
+
+Earned Today, Weekly Goal
+
+Badges: “Consistency Champ”, “Top Quizzer”, “Mentor’s Favorite”
+
+Leaderboard: Weekly
+
+“Earn Coins” → Task List (planner, quiz, streak)
+
+12. Upload Resource Center
+Upload PDF, YouTube link, or Typed Notes
+
+Show Parsing Status
+
+Outputs: Summary, Flashcards, MCQs (in tabs)
+
+Save any result to Notes Vault
+
+Ask AI to generate revision quiz or concept map
+
+13. Settings & Profile
+Update Exam, Preferences
+
+Notifications
+
+Privacy & Security
+
+Study Goal Re-planning
+
+View Past Progress Snapshots
+
+✅ GLOBAL COMPONENTS (USE ON ALL PAGES)
+🧠 Floating AI Mentor Button
+Sticky button bottom-right
+
+When clicked: opens popover or drawer for chat input
+
+Always available to:
+
+Explain a task
+
+Reschedule plan
+
+Solve a quiz doubt
+
+Summarize notes or news
+
+Motivate (“Talk to me, I’m stuck 😩”)
+
+✅ Final Instruction:
+Design a full, modern web and mobile app using the structure above.
+
+Prioritize mobile-first UX
+
+Reuse components for task cards, note previews, flashcards
+
+Keep AI mentor access universal via floating button
+
+All sections must be modular, readable, and emotionally engaging
+
+Design should support real use by students aged 16–28 preparing for serious exams
