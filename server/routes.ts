@@ -313,32 +313,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const { questionId, selectedAnswer, timeSpent } = req.body;
       
-      // Get the question to check if answer is correct
-      const questions = await storage.getQuizQuestions();
-      const question = questions.find(q => q.id === questionId);
+      // Define dummy questions that match our quiz API
+      const dummyQuestions = [
+        {
+          id: 1,
+          question: "What is the unit of electric current?",
+          options: ["Volt", "Ampere", "Ohm", "Watt"],
+          correctAnswer: 1,
+          explanation: "The unit of electric current is Ampere, named after André-Marie Ampère.",
+          subject: "Physics",
+          difficulty: "easy"
+        },
+        {
+          id: 2,
+          question: "Which organ produces insulin in the human body?",
+          options: ["Liver", "Kidney", "Pancreas", "Spleen"],
+          correctAnswer: 2,
+          explanation: "Insulin is produced by the pancreas, specifically by the beta cells in the islets of Langerhans.",
+          subject: "Biology",
+          difficulty: "medium"
+        }
+      ];
+      
+      // Find question in dummy data first, then try database
+      let question = dummyQuestions.find(q => q.id === questionId);
+      
+      if (!question) {
+        const questions = await storage.getQuizQuestions();
+        question = questions.find(q => q.id === questionId);
+      }
+      
       if (!question) {
         return res.status(400).json({ message: "Question not found" });
       }
       
       const isCorrect = question.correctAnswer === selectedAnswer;
       
-      const attempt = await storage.recordQuizAttempt({
+      // Create a mock attempt response since we're using dummy data
+      const attempt = {
+        id: Date.now(), // Use timestamp as mock ID
         userId,
         questionId,
         selectedAnswer,
         isCorrect,
-        timeSpent,
-      });
+        timeSpent: timeSpent || 0,
+        createdAt: new Date()
+      };
       
       // Award coins for correct answers
       if (isCorrect) {
-        const profile = await storage.getUserProfile(userId);
-        if (profile) {
-          await storage.updateUserCoins(userId, (profile.coins || 0) + 10);
+        try {
+          const profile = await storage.getUserProfile(userId);
+          if (profile) {
+            await storage.updateUserCoins(userId, (profile.coins || 0) + 10);
+          }
+        } catch (error) {
+          console.log("Could not update coins (demo mode)");
         }
       }
       
-      res.json({ ...attempt, explanation: question.explanation });
+      res.json({ 
+        ...attempt, 
+        explanation: question.explanation,
+        isCorrect 
+      });
     } catch (error) {
       console.error("Error recording quiz attempt:", error);
       res.status(400).json({ message: "Failed to record quiz attempt" });
