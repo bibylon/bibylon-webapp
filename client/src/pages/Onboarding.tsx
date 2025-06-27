@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { 
   User, 
@@ -79,6 +79,8 @@ export default function Onboarding() {
       await apiRequest("POST", "/api/profile", data);
     },
     onSuccess: () => {
+      // Invalidate user query to refetch profile data
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Profile Created!",
         description: "Welcome to My AI Mentor. Let's start your learning journey!",
