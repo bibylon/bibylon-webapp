@@ -265,6 +265,12 @@ export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  goalDate: z.union([
+    z.string().transform((str) => new Date(str)),
+    z.date(),
+    z.null()
+  ]).optional(),
 });
 
 export const insertStudyPlanSchema = createInsertSchema(studyPlans).omit({
