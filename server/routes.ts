@@ -34,16 +34,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/profile', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      console.log("Request body:", req.body);
       const profileData = insertUserProfileSchema.parse({ ...req.body, userId });
-      console.log("Parsed profile data:", profileData);
       const profile = await storage.createUserProfile(profileData);
       res.json(profile);
     } catch (error) {
       console.error("Error creating profile:", error);
-      if (error instanceof Error) {
-        console.error("Error details:", error.message);
-      }
       res.status(400).json({ message: "Failed to create profile" });
     }
   });
@@ -93,11 +88,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const { startDate, endDate } = req.query;
       
-      const plans = await storage.getStudyPlans(
-        userId,
-        new Date(startDate as string),
-        new Date(endDate as string)
-      );
+      // Use default date range if not provided
+      const start = startDate ? new Date(startDate as string) : new Date();
+      const end = endDate ? new Date(endDate as string) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      
+      const plans = await storage.getStudyPlans(userId, start, end);
+      
+      // If no plans exist, return dummy data for demonstration
+      if (plans.length === 0) {
+        const dummyPlans = [
+          {
+            id: 1,
+            userId,
+            date: new Date(),
+            subject: "Physics",
+            topic: "Thermodynamics",
+            duration: 90,
+            type: "theory",
+            priority: "high",
+            completed: false,
+            createdAt: new Date()
+          },
+          {
+            id: 2,
+            userId,
+            date: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            subject: "Mathematics",
+            topic: "Calculus",
+            duration: 120,
+            type: "practice",
+            priority: "medium",
+            completed: false,
+            createdAt: new Date()
+          }
+        ];
+        return res.json(dummyPlans);
+      }
       
       res.json(plans);
     } catch (error) {
@@ -134,6 +160,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
       
+      // If no affairs exist, return dummy data
+      if (!affairs || affairs.length === 0) {
+        const dummyAffairs = [
+          {
+            id: 1,
+            title: "India's New Education Policy Update",
+            content: "The Ministry of Education announced significant updates to the National Education Policy, focusing on digital literacy and skill development for competitive exam preparation.",
+            category: "Education",
+            source: "Ministry of Education",
+            date: new Date(),
+            importance: "high",
+            createdAt: new Date()
+          },
+          {
+            id: 2,
+            title: "Space Mission Milestone",
+            content: "ISRO successfully launches advanced satellite for earth observation, marking a significant achievement in India's space program.",
+            category: "Science",
+            source: "ISRO",
+            date: new Date(),
+            importance: "medium",
+            createdAt: new Date()
+          }
+        ];
+        return res.json(dummyAffairs);
+      }
+      
       res.json(affairs);
     } catch (error) {
       console.error("Error fetching current affairs:", error);
@@ -145,6 +198,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/vocabulary/daily', async (req, res) => {
     try {
       const vocab = await storage.getDailyVocabulary();
+      
+      // Return dummy vocabulary if none exists
+      if (!vocab) {
+        const dummyVocab = {
+          id: 1,
+          word: "Perspicacious",
+          meaning: "Having a ready insight into and understanding of things",
+          pronunciation: "per-spi-KAY-shus",
+          example: "The perspicacious student quickly grasped the complex concept.",
+          difficulty: "advanced",
+          category: "general",
+          createdAt: new Date()
+        };
+        return res.json(dummyVocab);
+      }
+      
       res.json(vocab);
     } catch (error) {
       console.error("Error fetching daily vocabulary:", error);
@@ -201,6 +270,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subject as string,
           limit ? parseInt(limit as string) : undefined
         );
+      }
+      
+      // Return dummy questions if none exist
+      if (!questions || questions.length === 0) {
+        const dummyQuestions = [
+          {
+            id: 1,
+            question: "What is the unit of electric current?",
+            options: ["Volt", "Ampere", "Ohm", "Watt"],
+            correctAnswer: 1,
+            explanation: "The unit of electric current is Ampere, named after André-Marie Ampère.",
+            subject: "Physics",
+            difficulty: "easy",
+            source: "textbook",
+            createdAt: new Date()
+          },
+          {
+            id: 2,
+            question: "Which organ produces insulin in the human body?",
+            options: ["Liver", "Kidney", "Pancreas", "Spleen"],
+            correctAnswer: 2,
+            explanation: "Insulin is produced by the pancreas, specifically by the beta cells in the islets of Langerhans.",
+            subject: "Biology",
+            difficulty: "medium",
+            source: "textbook",
+            createdAt: new Date()
+          }
+        ];
+        return res.json(dummyQuestions);
       }
       
       res.json(questions);
@@ -310,6 +408,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { category } = req.query;
       
       const notes = await storage.getUserNotes(userId, category as string);
+      
+      // Return sample notes if none exist
+      if (!notes || notes.length === 0) {
+        const sampleNotes = [
+          {
+            id: 1,
+            userId,
+            title: "Thermodynamics Laws",
+            content: "First Law: Energy cannot be created or destroyed, only transferred. Second Law: Entropy of isolated system always increases.",
+            category: "Physics",
+            tags: ["energy", "entropy", "laws"],
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: 2,
+            userId,
+            title: "Photosynthesis Process",
+            content: "Light-dependent reactions occur in thylakoids, producing ATP and NADPH. Calvin cycle occurs in stroma, fixing CO2 into glucose.",
+            category: "Biology",
+            tags: ["photosynthesis", "plants", "energy"],
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        ];
+        return res.json(sampleNotes);
+      }
+      
       res.json(notes);
     } catch (error) {
       console.error("Error fetching notes:", error);
@@ -367,6 +493,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { status } = req.query;
       
       const flashcards = await storage.getUserFlashcards(userId, status as string);
+      
+      // Return sample flashcards if none exist
+      if (!flashcards || flashcards.length === 0) {
+        const sampleFlashcards = [
+          {
+            id: 1,
+            userId,
+            front: "What is Newton's First Law of Motion?",
+            back: "An object at rest stays at rest and an object in motion stays in motion with the same speed and in the same direction unless acted upon by an unbalanced force.",
+            subject: "Physics",
+            status: "new",
+            reviewCount: 0,
+            lastReviewed: null,
+            createdAt: new Date()
+          },
+          {
+            id: 2,
+            userId,
+            front: "Define Mitosis",
+            back: "A type of cell division that results in two daughter cells each having the same number and kind of chromosomes as the parent nucleus.",
+            subject: "Biology",
+            status: "learning",
+            reviewCount: 2,
+            lastReviewed: new Date(Date.now() - 86400000), // 1 day ago
+            createdAt: new Date()
+          },
+          {
+            id: 3,
+            userId,
+            front: "What is the derivative of x²?",
+            back: "2x",
+            subject: "Mathematics",
+            status: "mastered",
+            reviewCount: 5,
+            lastReviewed: new Date(Date.now() - 172800000), // 2 days ago
+            createdAt: new Date()
+          }
+        ];
+        return res.json(sampleFlashcards);
+      }
+      
       res.json(flashcards);
     } catch (error) {
       console.error("Error fetching flashcards:", error);
