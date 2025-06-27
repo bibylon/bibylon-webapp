@@ -340,7 +340,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!question) {
         const questions = await storage.getQuizQuestions();
-        question = questions.find(q => q.id === questionId);
+        const dbQuestion = questions.find(q => q.id === questionId);
+        if (dbQuestion) {
+          question = {
+            id: dbQuestion.id,
+            question: dbQuestion.question,
+            options: dbQuestion.options,
+            correctAnswer: dbQuestion.correctAnswer,
+            explanation: dbQuestion.explanation || "No explanation available",
+            subject: dbQuestion.subject,
+            difficulty: dbQuestion.difficulty
+          };
+        }
       }
       
       if (!question) {

@@ -155,7 +155,7 @@ export default function CurrentAffairs() {
           Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="h-32 bg-gray-200 rounded-xl animate-pulse" />
           ))
-        ) : currentAffairs && currentAffairs.length > 0 ? (
+        ) : Array.isArray(currentAffairs) && currentAffairs.length > 0 ? (
           currentAffairs.map((article: any) => {
             const isExpanded = expandedArticles.has(article.id);
             return (
@@ -168,7 +168,7 @@ export default function CurrentAffairs() {
                       {article.category}
                     </Badge>
                     <span className="text-xs text-gray-500">
-                      {format(new Date(article.publishedDate), "h:mm a")}
+                      {format(new Date(article.date || article.publishedDate), "h:mm a")}
                     </span>
                   </div>
                   
