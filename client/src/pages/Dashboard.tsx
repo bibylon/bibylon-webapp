@@ -61,7 +61,7 @@ export default function Dashboard() {
 
   const updateStreakMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/streak/update");
+      await apiRequest("POST", "/api/progress/streak");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
@@ -70,207 +70,175 @@ export default function Dashboard() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    const name = user?.firstName || "Student";
+    const firstName = (user as any)?.firstName || "Student";
     
-    if (hour < 12) return `Good Morning, ${name}! 🌅`;
-    if (hour < 17) return `Good Afternoon, ${name}! ☀️`;
-    return `Good Evening, ${name}! 🌅`;
+    if (hour < 12) return `Good Morning, ${firstName}!`;
+    if (hour < 17) return `Good Afternoon, ${firstName}!`;
+    return `Good Evening, ${firstName}!`;
   };
 
-  const currentPlan = todaysStudyPlan?.[0];
+  const currentPlan = (todaysStudyPlan as any)?.[0];
   const todaysTasks = currentPlan?.tasks || [];
   const completionPercentage = currentPlan ? parseFloat(currentPlan.completionPercentage) : 0;
 
   return (
-    <div className="p-4 pb-20 bg-gray-50 min-h-screen">
+    <div className="p-4 lg:p-8 pb-20 lg:pb-8 bg-gray-50 min-h-screen">
       {/* Header with Greeting */}
-      <Card className="gradient-primary text-white mb-6 rounded-2xl">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
+      <Card className="gradient-primary text-white mb-6 lg:mb-8 rounded-2xl">
+        <CardContent className="p-6 lg:p-8">
+          <div className="flex items-center justify-between mb-4 lg:mb-6">
             <div>
-              <h1 className="text-xl font-poppins font-bold mb-1">
+              <h1 className="text-xl lg:text-3xl font-poppins font-bold mb-1">
                 {getGreeting()}
               </h1>
-              <p className="text-indigo-200 text-sm">Ready to conquer your goals today?</p>
+              <p className="text-indigo-200 text-sm lg:text-base">Ready to conquer your goals today?</p>
             </div>
-            <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-              <Brain className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 lg:w-16 lg:h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+              <Brain className="w-6 h-6 lg:w-8 lg:h-8 text-white" />
             </div>
           </div>
           
           {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-6">
             <div className="text-center">
-              <div className="text-2xl font-bold">{user?.profile?.streak || 0}</div>
-              <div className="text-xs text-indigo-200">Day Streak</div>
+              <div className="text-2xl lg:text-3xl font-bold">{(user as any)?.profile?.streak || 0}</div>
+              <div className="text-xs lg:text-sm text-indigo-200">Day Streak</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold">{user?.profile?.coins || 0}</div>
-              <div className="text-xs text-indigo-200">Coins</div>
+              <div className="text-2xl lg:text-3xl font-bold">{(user as any)?.profile?.coins || 0}</div>
+              <div className="text-xs lg:text-sm text-indigo-200">Coins</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold">{quizStats?.accuracy || 0}%</div>
-              <div className="text-xs text-indigo-200">Accuracy</div>
+              <div className="text-2xl lg:text-3xl font-bold">{(quizStats as any)?.accuracy || 0}%</div>
+              <div className="text-xs lg:text-sm text-indigo-200">Accuracy</div>
+            </div>
+            <div className="text-center hidden lg:block">
+              <div className="text-2xl lg:text-3xl font-bold">{completionPercentage}%</div>
+              <div className="text-xs lg:text-sm text-indigo-200">Today's Progress</div>
+            </div>
+            <div className="text-center hidden lg:block">
+              <div className="text-2xl lg:text-3xl font-bold">{todaysTasks.length}</div>
+              <div className="text-xs lg:text-sm text-indigo-200">Total Tasks</div>
+            </div>
+            <div className="text-center hidden lg:block">
+              <div className="text-2xl lg:text-3xl font-bold">{todaysTasks.filter((t:any) => t.completed).length}</div>
+              <div className="text-xs lg:text-sm text-indigo-200">Completed</div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Today's Plan */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-poppins font-bold text-gray-800">Today's Study Plan</h2>
-          {!currentPlan && (
-            <Button
-              size="sm"
-              onClick={() => generatePlanMutation.mutate()}
-              disabled={generatePlanMutation.isPending}
-              className="gradient-secondary text-white"
-            >
-              {generatePlanMutation.isPending ? "Generating..." : "Generate Plan"}
-            </Button>
-          )}
-        </div>
-
-        {planLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 bg-gray-200 rounded-xl animate-pulse" />
-            ))}
-          </div>
-        ) : todaysTasks.length > 0 ? (
-          <div className="space-y-3">
-            {todaysTasks.map((task: any, index: number) => (
-              <TaskCard
-                key={index}
-                task={task}
-                onComplete={() => {
-                  // Handle task completion
-                  updateStreakMutation.mutate();
-                }}
-              />
-            ))}
-          </div>
-        ) : (
-          <Card className="card-shadow">
-            <CardContent className="p-6 text-center">
-              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <h3 className="font-medium text-gray-800 mb-2">No study plan yet</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Generate your personalized study plan for today
-              </p>
+      {/* Main Content Grid */}
+      <div className="lg:grid lg:grid-cols-2 lg:gap-8 space-y-6 lg:space-y-0">
+        {/* Today's Plan */}
+        <div className="mb-6 lg:mb-0">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg lg:text-xl font-poppins font-bold text-gray-800">Today's Study Plan</h2>
+            {!currentPlan && (
               <Button
+                size="sm"
                 onClick={() => generatePlanMutation.mutate()}
                 disabled={generatePlanMutation.isPending}
-                className="gradient-primary text-white"
+                className="gradient-secondary text-white"
               >
                 {generatePlanMutation.isPending ? "Generating..." : "Generate Plan"}
               </Button>
+            )}
+          </div>
+
+          {planLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-20 bg-gray-200 rounded-xl animate-pulse" />
+              ))}
+            </div>
+          ) : todaysTasks.length > 0 ? (
+            <div className="space-y-3">
+              {todaysTasks.map((task: any, index: number) => (
+                <TaskCard
+                  key={index}
+                  task={task}
+                  onComplete={() => {
+                    // Handle task completion
+                    updateStreakMutation.mutate();
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <Card className="card-shadow">
+              <CardContent className="p-6 text-center">
+                <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <h3 className="font-medium text-gray-800 mb-2">No study plan yet</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Generate your personalized study plan for today
+                </p>
+                <Button
+                  onClick={() => generatePlanMutation.mutate()}
+                  disabled={generatePlanMutation.isPending}
+                  className="gradient-primary text-white"
+                >
+                  {generatePlanMutation.isPending ? "Generating..." : "Generate Plan"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Quick Actions and Progress */}
+        <div className="mb-6">
+          <h2 className="text-lg lg:text-xl font-poppins font-bold text-gray-800 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <Button
+              variant="outline"
+              className="h-20 flex-col space-y-2 bg-white hover:bg-gray-50"
+            >
+              <div className="w-12 h-12 bg-accent bg-opacity-20 rounded-full flex items-center justify-center">
+                <Brain className="w-6 h-6 text-accent" />
+              </div>
+              <div className="text-center">
+                <div className="font-medium text-gray-800">Ask AI</div>
+                <div className="text-xs text-gray-500">Get instant help</div>
+              </div>
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="h-20 flex-col space-y-2 bg-white hover:bg-gray-50"
+            >
+              <div className="w-12 h-12 bg-primary bg-opacity-20 rounded-full flex items-center justify-center">
+                <Zap className="w-6 h-6 text-primary" />
+              </div>
+              <div className="text-center">
+                <div className="font-medium text-gray-800">Take Quiz</div>
+                <div className="text-xs text-gray-500">Test yourself</div>
+              </div>
+            </Button>
+          </div>
+
+          {/* Progress Card */}
+          <Card className="card-shadow">
+            <CardContent className="p-6">
+              <h3 className="font-medium text-gray-800 mb-4">Today's Progress</h3>
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">{completionPercentage}%</div>
+                  <div className="text-xs text-gray-500">Completed</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{(quizStats as any)?.accuracy || 0}%</div>
+                  <div className="text-xs text-gray-500">Accuracy</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-accent">{(quizStats as any)?.totalAttempts || 0}</div>
+                  <div className="text-xs text-gray-500">Questions</div>
+                </div>
+              </div>
+              <Progress value={completionPercentage} className="h-2" />
             </CardContent>
           </Card>
-        )}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="mb-6">
-        <h2 className="text-lg font-poppins font-bold text-gray-800 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <Button
-            variant="outline"
-            className="h-20 flex-col space-y-2 bg-white hover:bg-gray-50"
-          >
-            <div className="w-12 h-12 bg-accent bg-opacity-20 rounded-full flex items-center justify-center">
-              <Brain className="w-6 h-6 text-accent" />
-            </div>
-            <div className="text-center">
-              <div className="font-medium text-gray-800">Ask AI</div>
-              <div className="text-xs text-gray-500">Get instant help</div>
-            </div>
-          </Button>
-          
-          <Button
-            variant="outline"
-            className="h-20 flex-col space-y-2 bg-white hover:bg-gray-50"
-          >
-            <div className="w-12 h-12 bg-primary bg-opacity-20 rounded-full flex items-center justify-center">
-              <Zap className="w-6 h-6 text-primary" />
-            </div>
-            <div className="text-center">
-              <div className="font-medium text-gray-800">Take Quiz</div>
-              <div className="text-xs text-gray-500">Test yourself</div>
-            </div>
-          </Button>
-          
-          <Button
-            variant="outline"
-            className="h-20 flex-col space-y-2 bg-white hover:bg-gray-50"
-          >
-            <div className="w-12 h-12 bg-secondary bg-opacity-20 rounded-full flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-secondary" />
-            </div>
-            <div className="text-center">
-              <div className="font-medium text-gray-800">Notes</div>
-              <div className="text-xs text-gray-500">Review & add</div>
-            </div>
-          </Button>
-          
-          <Button
-            variant="outline"
-            className="h-20 flex-col space-y-2 bg-white hover:bg-gray-50"
-          >
-            <div className="w-12 h-12 bg-purple-500 bg-opacity-20 rounded-full flex items-center justify-center">
-              <Target className="w-6 h-6 text-purple-500" />
-            </div>
-            <div className="text-center">
-              <div className="font-medium text-gray-800">Flashcards</div>
-              <div className="text-xs text-gray-500">Quick review</div>
-            </div>
-          </Button>
         </div>
       </div>
-
-      {/* Motivation Strip */}
-      <Card className="gradient-accent text-white mb-6 rounded-xl">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm font-medium mb-1">"Success is not final, failure is not fatal."</p>
-              <p className="text-xs text-orange-100">— Winston Churchill</p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center">
-                <Flame className="w-4 h-4 text-orange-200 mr-1" />
-                <span className="text-sm font-bold">{user?.profile?.streak || 0}</span>
-              </div>
-              <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <Trophy className="w-4 h-4" />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Progress Snapshot */}
-      <Card className="card-shadow">
-        <CardContent className="p-4">
-          <h3 className="font-poppins font-bold text-gray-800 mb-4">This Week's Progress</h3>
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-secondary">{Math.round(completionPercentage)}%</div>
-              <div className="text-xs text-gray-500">Completed</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">{quizStats?.accuracy || 0}%</div>
-              <div className="text-xs text-gray-500">Accuracy</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-accent">{quizStats?.totalAttempts || 0}</div>
-              <div className="text-xs text-gray-500">Questions</div>
-            </div>
-          </div>
-          <Progress value={completionPercentage} className="h-2" />
-        </CardContent>
-      </Card>
     </div>
   );
 }

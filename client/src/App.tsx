@@ -19,6 +19,7 @@ import UploadCenter from "@/pages/UploadCenter";
 import Settings from "@/pages/Settings";
 import FloatingAIButton from "@/components/FloatingAIButton";
 import BottomNavigation from "@/components/BottomNavigation";
+import DesktopSidebar from "@/components/DesktopSidebar";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -33,7 +34,7 @@ function Router() {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen relative overflow-hidden">
+    <div className="lg:max-w-7xl lg:mx-auto max-w-md mx-auto bg-white min-h-screen relative overflow-hidden">
       <Switch>
         {!isAuthenticated ? (
           <>
@@ -43,21 +44,29 @@ function Router() {
         ) : (
           <>
             {/* Check if user needs onboarding */}
-            {!user?.profile ? (
+            {!(user as any)?.firstName ? (
               <Route path="/" component={Onboarding} />
             ) : (
               <>
-                <Route path="/" component={Dashboard} />
-                <Route path="/planner" component={StudyPlanner} />
-                <Route path="/current-affairs" component={CurrentAffairs} />
-                <Route path="/vocabulary" component={VocabularyBuilder} />
-                <Route path="/quiz" component={QuizArena} />
-                <Route path="/notes" component={NotesVault} />
-                <Route path="/flashcards" component={FlashcardCarousel} />
-                <Route path="/analytics" component={Analytics} />
-                <Route path="/gamification" component={Gamification} />
-                <Route path="/upload" component={UploadCenter} />
-                <Route path="/settings" component={Settings} />
+                {/* Desktop Sidebar */}
+                <DesktopSidebar />
+                
+                {/* Main Content Area */}
+                <div className="lg:pl-64">
+                  <div className="lg:max-w-none max-w-md lg:mx-0 mx-auto">
+                    <Route path="/" component={Dashboard} />
+                    <Route path="/study-planner" component={StudyPlanner} />
+                    <Route path="/current-affairs" component={CurrentAffairs} />
+                    <Route path="/vocabulary" component={VocabularyBuilder} />
+                    <Route path="/quiz" component={QuizArena} />
+                    <Route path="/notes" component={NotesVault} />
+                    <Route path="/flashcards" component={FlashcardCarousel} />
+                    <Route path="/analytics" component={Analytics} />
+                    <Route path="/gamification" component={Gamification} />
+                    <Route path="/upload" component={UploadCenter} />
+                    <Route path="/settings" component={Settings} />
+                  </div>
+                </div>
               </>
             )}
           </>
@@ -65,12 +74,12 @@ function Router() {
         <Route component={NotFound} />
       </Switch>
       
-      {/* Global components - only show if authenticated and onboarded */}
-      {isAuthenticated && user?.profile && (
-        <>
+      {/* Mobile-only components - only show if authenticated and onboarded */}
+      {isAuthenticated && (user as any)?.firstName && (
+        <div className="lg:hidden">
           <FloatingAIButton />
           <BottomNavigation />
-        </>
+        </div>
       )}
     </div>
   );
