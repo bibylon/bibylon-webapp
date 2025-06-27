@@ -1,0 +1,233 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(255, 92%, 67%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(166, 73%, 46%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(45, 93%, 47%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.75rem;
+
+  /* Subject colors */
+  --biology: hsl(166, 73%, 46%);
+  --physics: hsl(221, 83%, 63%);
+  --chemistry: hsl(271, 76%, 66%);
+  --math: hsl(45, 93%, 47%);
+  --polity: hsl(0, 84%, 60%);
+  --economy: hsl(166, 73%, 46%);
+  --environment: hsl(166, 73%, 46%);
+  --science: hsl(221, 83%, 63%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(255, 92%, 67%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-gray-50 text-foreground font-inter antialiased;
+  }
+
+  .font-poppins {
+    font-family: 'Poppins', sans-serif;
+  }
+
+  .font-inter {
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  .subject-bio {
+    @apply bg-green-500 text-white;
+  }
+  
+  .subject-physics {
+    @apply bg-blue-500 text-white;
+  }
+  
+  .subject-chemistry {
+    @apply bg-purple-500 text-white;
+  }
+  
+  .subject-math {
+    @apply bg-amber-500 text-white;
+  }
+  
+  .subject-polity {
+    @apply bg-red-500 text-white;
+  }
+  
+  .subject-economy {
+    @apply bg-green-600 text-white;
+  }
+  
+  .subject-environment {
+    @apply bg-green-500 text-white;
+  }
+  
+  .subject-science {
+    @apply bg-blue-600 text-white;
+  }
+
+  .nav-item-active {
+    @apply text-primary;
+  }
+
+  .nav-item-inactive {
+    @apply text-gray-600;
+  }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(255, 92%, 67%) 0%, hsl(221, 83%, 63%) 100%);
+  }
+
+  .gradient-secondary {
+    background: linear-gradient(135deg, hsl(166, 73%, 46%) 0%, hsl(142, 76%, 36%) 100%);
+  }
+
+  .gradient-accent {
+    background: linear-gradient(135deg, hsl(45, 93%, 47%) 0%, hsl(22, 93%, 64%) 100%);
+  }
+
+  .card-shadow {
+    @apply shadow-sm border border-gray-100;
+  }
+
+  .floating-shadow {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  }
+}
+
+@layer utilities {
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .touch-pan-y {
+    touch-action: pan-y;
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(60, 4.8%, 95.9%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(25, 5.3%, 44.7%);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(20, 14.3%, 4.1%);
+}
+
+/* Prevent text selection on interactive elements */
+button, .nav-item {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Loading states */
+.skeleton {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+/* Focus styles for accessibility */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+}
+
+/* Transition utilities */
+.transition-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-bounce {
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
