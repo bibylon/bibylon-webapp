@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
@@ -20,10 +21,12 @@ import Settings from "@/pages/Settings";
 import FloatingAIButton from "@/components/FloatingAIButton";
 import BottomNavigation from "@/components/BottomNavigation";
 import DesktopSidebar from "@/components/DesktopSidebar";
+import Header from "@/components/Header";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -48,11 +51,32 @@ function Router() {
               <Route path="/" component={Onboarding} />
             ) : (
               <>
+                {/* Header - shows across all authenticated pages */}
+                <Header 
+                  onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  isMobileMenuOpen={isMobileMenuOpen}
+                />
+                
                 {/* Desktop Sidebar */}
                 <DesktopSidebar />
                 
+                {/* Mobile Sidebar Overlay */}
+                {isMobileMenuOpen && (
+                  <div 
+                    className="lg:hidden fixed inset-0 z-40 bg-black bg-opacity-50"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <div 
+                      className="fixed inset-y-0 left-0 w-64 bg-white shadow-xl transform transition-transform duration-200 ease-in-out"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <DesktopSidebar />
+                    </div>
+                  </div>
+                )}
+                
                 {/* Main Content Area */}
-                <div className="lg:pl-64">
+                <div className="lg:pl-64 pt-16 lg:pt-16">
                   <div className="lg:max-w-none max-w-md lg:mx-0 mx-auto">
                     <Route path="/" component={Dashboard} />
                     <Route path="/study-planner" component={StudyPlanner} />
