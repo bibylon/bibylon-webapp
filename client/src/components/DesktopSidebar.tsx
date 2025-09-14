@@ -1,35 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { 
-  Home, 
-  Calendar, 
-  Newspaper, 
-  BookOpen, 
-  Brain, 
-  StickyNote, 
-  Zap, 
-  BarChart3, 
-  Trophy, 
-  Upload, 
-  Settings, 
-  LogOut,
-  GraduationCap
-} from "lucide-react";
+import { LogOut, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-
-const navigationItems = [
-  { path: "/", icon: Home, label: "Dashboard" },
-  { path: "/study-planner", icon: Calendar, label: "Study Planner" },
-  { path: "/current-affairs", icon: Newspaper, label: "Current Affairs" },
-  { path: "/vocabulary", icon: BookOpen, label: "Vocabulary" },
-  { path: "/quiz", icon: Brain, label: "Quiz Arena" },
-  { path: "/notes", icon: StickyNote, label: "Notes Vault" },
-  { path: "/flashcards", icon: Zap, label: "Flashcards" },
-  { path: "/analytics", icon: BarChart3, label: "Analytics" },
-  { path: "/gamification", icon: Trophy, label: "Achievements" },
-  { path: "/upload", icon: Upload, label: "Upload Center" },
-  { path: "/settings", icon: Settings, label: "Settings" },
-];
+import { navigationItems } from "./navigation";
 
 export default function DesktopSidebar() {
   const [location] = useLocation();
@@ -72,7 +45,9 @@ export default function DesktopSidebar() {
           
           return (
             <Link key={item.path} href={item.path}>
-              <div className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors cursor-pointer ${
+              <div 
+                data-testid={item.testId}
+                className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors cursor-pointer ${
                 isActive
                   ? 'bg-blue-100 text-blue-900'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'

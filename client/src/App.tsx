@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
@@ -26,7 +25,6 @@ import NotFound from "@/pages/not-found";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -52,28 +50,10 @@ function Router() {
             ) : (
               <>
                 {/* Header - shows across all authenticated pages */}
-                <Header 
-                  onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  isMobileMenuOpen={isMobileMenuOpen}
-                />
+                <Header />
                 
                 {/* Desktop Sidebar */}
                 <DesktopSidebar />
-                
-                {/* Mobile Sidebar Overlay */}
-                {isMobileMenuOpen && (
-                  <div 
-                    className="lg:hidden fixed inset-0 z-40 bg-black bg-opacity-50"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <div 
-                      className="fixed inset-y-0 left-0 w-64 bg-white shadow-xl transform transition-transform duration-200 ease-in-out"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <DesktopSidebar />
-                    </div>
-                  </div>
-                )}
                 
                 {/* Main Content Area */}
                 <div className="lg:pl-64 pt-16 lg:pt-16">
