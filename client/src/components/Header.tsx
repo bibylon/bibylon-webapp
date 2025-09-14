@@ -42,7 +42,11 @@ export default function Header(): JSX.Element {
                 variant="ghost"
                 size="sm"
                 className="p-2 touch-target"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsMobileMenuOpen(true);
+                }}
                 aria-label="Open navigation menu"
                 data-testid="mobile-menu-toggle"
               >
