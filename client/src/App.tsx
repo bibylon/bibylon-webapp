@@ -9,6 +9,7 @@ import Onboarding from "@/pages/Onboarding";
 import Dashboard from "@/pages/Dashboard";
 import StudyPlanner from "@/pages/StudyPlanner";
 import CurrentAffairs from "@/pages/CurrentAffairs";
+import CurrentAffairsDetail from "@/pages/CurrentAffairsDetail";
 import VocabularyBuilder from "@/pages/VocabularyBuilder";
 import QuizArena from "@/pages/QuizArena";
 import NotesVault from "@/pages/NotesVault";
@@ -61,6 +62,7 @@ function Router() {
                     <Route path="/" component={Dashboard} />
                     <Route path="/study-planner" component={StudyPlanner} />
                     <Route path="/current-affairs" component={CurrentAffairs} />
+                    <Route path="/current-affairs/:id" component={CurrentAffairsDetail} />
                     <Route path="/vocabulary" component={VocabularyBuilder} />
                     <Route path="/quiz" component={QuizArena} />
                     <Route path="/notes" component={NotesVault} />
