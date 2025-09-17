@@ -3,6 +3,10 @@ import {
   userProfiles,
   studyPlans,
   currentAffairs,
+  currentAffairsBookmarks,
+  currentAffairsInteractions,
+  currentAffairsRecommendations,
+  currentAffairsNotes,
   vocabulary,
   userVocabulary,
   quizQuestions,
@@ -22,6 +26,14 @@ import {
   type InsertStudyPlan,
   type CurrentAffair,
   type InsertCurrentAffair,
+  type CurrentAffairsBookmark,
+  type InsertCurrentAffairsBookmark,
+  type CurrentAffairsInteraction,
+  type InsertCurrentAffairsInteraction,
+  type CurrentAffairsRecommendation,
+  type InsertCurrentAffairsRecommendation,
+  type CurrentAffairsNote,
+  type InsertCurrentAffairsNote,
   type Vocabulary,
   type InsertVocabulary,
   type UserVocabulary,
@@ -66,7 +78,30 @@ export interface IStorage {
   // Current affairs operations
   getCurrentAffairs(limit?: number, category?: string): Promise<CurrentAffair[]>;
   getCurrentAffairsByDate(date: Date): Promise<CurrentAffair[]>;
+  getCurrentAffairsWithUserData(userId: string, limit?: number, category?: string): Promise<(CurrentAffair & { isBookmarked: boolean; hasNotes: boolean; userInteractions: number; })[]>;
+  getCurrentAffairById(id: number): Promise<CurrentAffair | undefined>;
   createCurrentAffair(affair: InsertCurrentAffair): Promise<CurrentAffair>;
+  
+  // Current affairs bookmarks
+  getUserBookmarkedAffairs(userId: string): Promise<(CurrentAffairsBookmark & { currentAffair: CurrentAffair })[]>;
+  bookmarkCurrentAffair(userId: string, currentAffairId: number): Promise<CurrentAffairsBookmark>;
+  removeBookmark(userId: string, currentAffairId: number): Promise<boolean>;
+  isArticleBookmarked(userId: string, currentAffairId: number): Promise<boolean>;
+  
+  // Current affairs interactions
+  recordCurrentAffairsInteraction(interaction: InsertCurrentAffairsInteraction): Promise<CurrentAffairsInteraction>;
+  getUserCurrentAffairsInteractions(userId: string, currentAffairId?: number): Promise<CurrentAffairsInteraction[]>;
+  
+  // Current affairs recommendations
+  generatePersonalizedRecommendations(userId: string): Promise<CurrentAffairsRecommendation[]>;
+  getUserRecommendations(userId: string, limit?: number): Promise<(CurrentAffairsRecommendation & { currentAffair: CurrentAffair })[]>;
+  markRecommendationViewed(userId: string, recommendationId: number): Promise<CurrentAffairsRecommendation>;
+  
+  // Current affairs notes
+  getCurrentAffairsNotes(userId: string, currentAffairId?: number): Promise<CurrentAffairsNote[]>;
+  createCurrentAffairsNote(note: InsertCurrentAffairsNote): Promise<CurrentAffairsNote>;
+  updateCurrentAffairsNote(id: number, updates: Partial<InsertCurrentAffairsNote>): Promise<CurrentAffairsNote>;
+  deleteCurrentAffairsNote(id: number, userId: string): Promise<boolean>;
   
   // Vocabulary operations
   getDailyVocabulary(): Promise<Vocabulary | undefined>;
@@ -194,13 +229,16 @@ export class DatabaseStorage implements IStorage {
 
   // Current affairs operations
   async getCurrentAffairs(limit = 10, category?: string): Promise<CurrentAffair[]> {
-    let query = db.select().from(currentAffairs);
+    const baseQuery = db.select().from(currentAffairs);
     
     if (category) {
-      query = query.where(eq(currentAffairs.category, category));
+      return await baseQuery
+        .where(eq(currentAffairs.category, category))
+        .orderBy(desc(currentAffairs.publishedDate))
+        .limit(limit);
     }
     
-    return await query
+    return await baseQuery
       .orderBy(desc(currentAffairs.publishedDate))
       .limit(limit);
   }
@@ -223,9 +261,264 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(currentAffairs.publishedDate));
   }
 
+  async getCurrentAffairsWithUserData(userId: string, limit = 10, category?: string): Promise<(CurrentAffair & { isBookmarked: boolean; hasNotes: boolean; userInteractions: number; })[]> {
+    let query = db
+      .select({
+        id: currentAffairs.id,
+        title: currentAffairs.title,
+        content: currentAffairs.content,
+        summary: currentAffairs.summary,
+        category: currentAffairs.category,
+        source: currentAffairs.source,
+        publishedDate: currentAffairs.publishedDate,
+        tags: currentAffairs.tags,
+        imageUrl: currentAffairs.imageUrl,
+        importance: currentAffairs.importance,
+        examRelevance: currentAffairs.examRelevance,
+        readTime: currentAffairs.readTime,
+        aiKeyPoints: currentAffairs.aiKeyPoints,
+        aiSummary: currentAffairs.aiSummary,
+        relatedTopics: currentAffairs.relatedTopics,
+        createdAt: currentAffairs.createdAt,
+        updatedAt: currentAffairs.updatedAt,
+        isBookmarked: sql<boolean>`CASE WHEN ${currentAffairsBookmarks.id} IS NOT NULL THEN true ELSE false END`,
+        hasNotes: sql<boolean>`CASE WHEN ${currentAffairsNotes.id} IS NOT NULL THEN true ELSE false END`,
+        userInteractions: sql<number>`COALESCE(interaction_counts.count, 0)`,
+      })
+      .from(currentAffairs)
+      .leftJoin(
+        currentAffairsBookmarks, 
+        and(
+          eq(currentAffairsBookmarks.currentAffairId, currentAffairs.id),
+          eq(currentAffairsBookmarks.userId, userId)
+        )
+      )
+      .leftJoin(
+        currentAffairsNotes,
+        and(
+          eq(currentAffairsNotes.currentAffairId, currentAffairs.id),
+          eq(currentAffairsNotes.userId, userId)
+        )
+      )
+      .leftJoin(
+        sql`(SELECT current_affair_id, COUNT(*) as count FROM current_affairs_interactions WHERE user_id = ${userId} GROUP BY current_affair_id) AS interaction_counts`,
+        sql`interaction_counts.current_affair_id = ${currentAffairs.id}`
+      );
+
+    if (category) {
+      return await query
+        .where(eq(currentAffairs.category, category))
+        .orderBy(desc(currentAffairs.publishedDate))
+        .limit(limit);
+    }
+
+    return await query
+      .orderBy(desc(currentAffairs.publishedDate))
+      .limit(limit);
+  }
+
+  async getCurrentAffairById(id: number): Promise<CurrentAffair | undefined> {
+    const [affair] = await db.select().from(currentAffairs).where(eq(currentAffairs.id, id));
+    return affair;
+  }
+
   async createCurrentAffair(affair: InsertCurrentAffair): Promise<CurrentAffair> {
     const [newAffair] = await db.insert(currentAffairs).values(affair).returning();
     return newAffair;
+  }
+
+  // Current affairs bookmarks
+  async getUserBookmarkedAffairs(userId: string): Promise<(CurrentAffairsBookmark & { currentAffair: CurrentAffair })[]> {
+    const results = await db
+      .select({
+        id: currentAffairsBookmarks.id,
+        userId: currentAffairsBookmarks.userId,
+        currentAffairId: currentAffairsBookmarks.currentAffairId,
+        bookmarkedAt: currentAffairsBookmarks.bookmarkedAt,
+        currentAffair: currentAffairs,
+      })
+      .from(currentAffairsBookmarks)
+      .leftJoin(currentAffairs, eq(currentAffairsBookmarks.currentAffairId, currentAffairs.id))
+      .where(eq(currentAffairsBookmarks.userId, userId))
+      .orderBy(desc(currentAffairsBookmarks.bookmarkedAt));
+    
+    // Filter out any results where currentAffair is null (shouldn't happen with proper data)
+    return results.filter(result => result.currentAffair !== null) as (CurrentAffairsBookmark & { currentAffair: CurrentAffair })[];
+  }
+
+  async bookmarkCurrentAffair(userId: string, currentAffairId: number): Promise<CurrentAffairsBookmark> {
+    const [bookmark] = await db
+      .insert(currentAffairsBookmarks)
+      .values({ userId, currentAffairId })
+      .returning();
+    return bookmark;
+  }
+
+  async removeBookmark(userId: string, currentAffairId: number): Promise<boolean> {
+    const result = await db
+      .delete(currentAffairsBookmarks)
+      .where(
+        and(
+          eq(currentAffairsBookmarks.userId, userId),
+          eq(currentAffairsBookmarks.currentAffairId, currentAffairId)
+        )
+      );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async isArticleBookmarked(userId: string, currentAffairId: number): Promise<boolean> {
+    const [bookmark] = await db
+      .select()
+      .from(currentAffairsBookmarks)
+      .where(
+        and(
+          eq(currentAffairsBookmarks.userId, userId),
+          eq(currentAffairsBookmarks.currentAffairId, currentAffairId)
+        )
+      );
+    return !!bookmark;
+  }
+
+  // Current affairs interactions
+  async recordCurrentAffairsInteraction(interaction: InsertCurrentAffairsInteraction): Promise<CurrentAffairsInteraction> {
+    const [newInteraction] = await db
+      .insert(currentAffairsInteractions)
+      .values(interaction)
+      .returning();
+    return newInteraction;
+  }
+
+  async getUserCurrentAffairsInteractions(userId: string, currentAffairId?: number): Promise<CurrentAffairsInteraction[]> {
+    if (currentAffairId) {
+      return await db
+        .select()
+        .from(currentAffairsInteractions)
+        .where(and(
+          eq(currentAffairsInteractions.userId, userId),
+          eq(currentAffairsInteractions.currentAffairId, currentAffairId)
+        ))
+        .orderBy(desc(currentAffairsInteractions.createdAt));
+    }
+
+    return await db
+      .select()
+      .from(currentAffairsInteractions)
+      .where(eq(currentAffairsInteractions.userId, userId))
+      .orderBy(desc(currentAffairsInteractions.createdAt));
+  }
+
+  // Current affairs recommendations
+  async generatePersonalizedRecommendations(userId: string): Promise<CurrentAffairsRecommendation[]> {
+    // This is a placeholder for AI-powered recommendation logic
+    // In a real implementation, this would analyze user behavior, exam goals, weak subjects, etc.
+    const userProfile = await this.getUserProfile(userId);
+    
+    if (!userProfile) return [];
+
+    // Simple algorithm: recommend articles based on user's target exam and weak subjects
+    let relevantArticles = await db
+      .select()
+      .from(currentAffairs)
+      .where(sql`${currentAffairs.examRelevance} && ARRAY[${userProfile.targetExam}]`)
+      .limit(10);
+
+    const recommendations: InsertCurrentAffairsRecommendation[] = relevantArticles.map(article => ({
+      userId,
+      currentAffairId: article.id,
+      recommendationType: 'exam_relevant',
+      score: '0.8', // Base relevance score (string for numeric type)
+      reason: `Relevant for ${userProfile.targetExam} preparation`,
+    }));
+
+    if (recommendations.length === 0) return [];
+
+    return await db
+      .insert(currentAffairsRecommendations)
+      .values(recommendations)
+      .returning();
+  }
+
+  async getUserRecommendations(userId: string, limit = 10): Promise<(CurrentAffairsRecommendation & { currentAffair: CurrentAffair })[]> {
+    const results = await db
+      .select({
+        id: currentAffairsRecommendations.id,
+        userId: currentAffairsRecommendations.userId,
+        currentAffairId: currentAffairsRecommendations.currentAffairId,
+        recommendationType: currentAffairsRecommendations.recommendationType,
+        score: currentAffairsRecommendations.score,
+        reason: currentAffairsRecommendations.reason,
+        generatedAt: currentAffairsRecommendations.generatedAt,
+        viewed: currentAffairsRecommendations.viewed,
+        currentAffair: currentAffairs,
+      })
+      .from(currentAffairsRecommendations)
+      .leftJoin(currentAffairs, eq(currentAffairsRecommendations.currentAffairId, currentAffairs.id))
+      .where(eq(currentAffairsRecommendations.userId, userId))
+      .orderBy(desc(currentAffairsRecommendations.score), desc(currentAffairsRecommendations.generatedAt))
+      .limit(limit);
+    
+    // Filter out any results where currentAffair is null (shouldn't happen with proper data)
+    return results.filter(result => result.currentAffair !== null) as (CurrentAffairsRecommendation & { currentAffair: CurrentAffair })[];
+  }
+
+  async markRecommendationViewed(userId: string, recommendationId: number): Promise<CurrentAffairsRecommendation> {
+    const [updated] = await db
+      .update(currentAffairsRecommendations)
+      .set({ viewed: true })
+      .where(
+        and(
+          eq(currentAffairsRecommendations.id, recommendationId),
+          eq(currentAffairsRecommendations.userId, userId)
+        )
+      )
+      .returning();
+    return updated;
+  }
+
+  // Current affairs notes
+  async getCurrentAffairsNotes(userId: string, currentAffairId?: number): Promise<CurrentAffairsNote[]> {
+    if (currentAffairId) {
+      return await db
+        .select()
+        .from(currentAffairsNotes)
+        .where(and(
+          eq(currentAffairsNotes.userId, userId),
+          eq(currentAffairsNotes.currentAffairId, currentAffairId)
+        ))
+        .orderBy(desc(currentAffairsNotes.updatedAt));
+    }
+
+    return await db
+      .select()
+      .from(currentAffairsNotes)
+      .where(eq(currentAffairsNotes.userId, userId))
+      .orderBy(desc(currentAffairsNotes.updatedAt));
+  }
+
+  async createCurrentAffairsNote(note: InsertCurrentAffairsNote): Promise<CurrentAffairsNote> {
+    const [newNote] = await db.insert(currentAffairsNotes).values(note).returning();
+    return newNote;
+  }
+
+  async updateCurrentAffairsNote(id: number, updates: Partial<InsertCurrentAffairsNote>): Promise<CurrentAffairsNote> {
+    const [updatedNote] = await db
+      .update(currentAffairsNotes)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(currentAffairsNotes.id, id))
+      .returning();
+    return updatedNote;
+  }
+
+  async deleteCurrentAffairsNote(id: number, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(currentAffairsNotes)
+      .where(
+        and(
+          eq(currentAffairsNotes.id, id),
+          eq(currentAffairsNotes.userId, userId)
+        )
+      );
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Vocabulary operations
@@ -247,7 +540,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserVocabulary(userId: string, status?: string): Promise<(UserVocabulary & { vocabulary: Vocabulary })[]> {
-    let query = db
+    if (status) {
+      const results = await db
+        .select({
+          id: userVocabulary.id,
+          userId: userVocabulary.userId,
+          vocabularyId: userVocabulary.vocabularyId,
+          status: userVocabulary.status,
+          lastReviewed: userVocabulary.lastReviewed,
+          createdAt: userVocabulary.createdAt,
+          vocabulary: vocabulary,
+        })
+        .from(userVocabulary)
+        .leftJoin(vocabulary, eq(userVocabulary.vocabularyId, vocabulary.id))
+        .where(and(
+          eq(userVocabulary.userId, userId),
+          eq(userVocabulary.status, status)
+        ));
+      
+      return results.filter(result => result.vocabulary !== null) as (UserVocabulary & { vocabulary: Vocabulary })[];
+    }
+
+    const results = await db
       .select({
         id: userVocabulary.id,
         userId: userVocabulary.userId,
@@ -260,12 +574,8 @@ export class DatabaseStorage implements IStorage {
       .from(userVocabulary)
       .leftJoin(vocabulary, eq(userVocabulary.vocabularyId, vocabulary.id))
       .where(eq(userVocabulary.userId, userId));
-
-    if (status) {
-      query = query.where(eq(userVocabulary.status, status));
-    }
-
-    return await query;
+    
+    return results.filter(result => result.vocabulary !== null) as (UserVocabulary & { vocabulary: Vocabulary })[];
   }
 
   async createVocabulary(vocab: InsertVocabulary): Promise<Vocabulary> {
@@ -284,25 +594,33 @@ export class DatabaseStorage implements IStorage {
 
   // Quiz operations
   async getQuizQuestions(subject?: string, limit = 10): Promise<QuizQuestion[]> {
-    let query = db.select().from(quizQuestions);
+    const baseQuery = db.select().from(quizQuestions);
     
     if (subject) {
-      query = query.where(eq(quizQuestions.subject, subject));
+      return await baseQuery
+        .where(eq(quizQuestions.subject, subject))
+        .orderBy(sql`RANDOM()`)
+        .limit(limit);
     }
     
-    return await query
+    return await baseQuery
       .orderBy(sql`RANDOM()`)
       .limit(limit);
   }
 
   async getQuizQuestionsBySource(source: string, sourceId?: number, limit = 10): Promise<QuizQuestion[]> {
-    let query = db.select().from(quizQuestions).where(eq(quizQuestions.source, source));
-    
     if (sourceId) {
-      query = query.where(eq(quizQuestions.sourceId, sourceId));
+      return await db.select().from(quizQuestions)
+        .where(and(
+          eq(quizQuestions.source, source),
+          eq(quizQuestions.sourceId, sourceId)
+        ))
+        .orderBy(sql`RANDOM()`)
+        .limit(limit);
     }
     
-    return await query
+    return await db.select().from(quizQuestions)
+      .where(eq(quizQuestions.source, source))
       .orderBy(sql`RANDOM()`)
       .limit(limit);
   }
@@ -344,13 +662,18 @@ export class DatabaseStorage implements IStorage {
 
   // Notes operations
   async getUserNotes(userId: string, category?: string): Promise<Note[]> {
-    let query = db.select().from(notes).where(eq(notes.userId, userId));
-    
     if (category) {
-      query = query.where(eq(notes.category, category));
+      return await db.select().from(notes)
+        .where(and(
+          eq(notes.userId, userId),
+          eq(notes.category, category)
+        ))
+        .orderBy(desc(notes.updatedAt));
     }
     
-    return await query.orderBy(desc(notes.updatedAt));
+    return await db.select().from(notes)
+      .where(eq(notes.userId, userId))
+      .orderBy(desc(notes.updatedAt));
   }
 
   async createNote(note: InsertNote): Promise<Note> {
@@ -371,18 +694,23 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(notes)
       .where(and(eq(notes.id, id), eq(notes.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Flashcard operations
   async getUserFlashcards(userId: string, status?: string): Promise<Flashcard[]> {
-    let query = db.select().from(flashcards).where(eq(flashcards.userId, userId));
-    
     if (status) {
-      query = query.where(eq(flashcards.status, status));
+      return await db.select().from(flashcards)
+        .where(and(
+          eq(flashcards.userId, userId),
+          eq(flashcards.status, status)
+        ))
+        .orderBy(flashcards.lastReviewed);
     }
     
-    return await query.orderBy(flashcards.lastReviewed);
+    return await db.select().from(flashcards)
+      .where(eq(flashcards.userId, userId))
+      .orderBy(flashcards.lastReviewed);
   }
 
   async createFlashcard(flashcard: InsertFlashcard): Promise<Flashcard> {
@@ -401,13 +729,18 @@ export class DatabaseStorage implements IStorage {
 
   // Progress operations
   async getUserProgress(userId: string, subject?: string): Promise<UserProgress[]> {
-    let query = db.select().from(userProgress).where(eq(userProgress.userId, userId));
-    
     if (subject) {
-      query = query.where(eq(userProgress.subject, subject));
+      return await db.select().from(userProgress)
+        .where(and(
+          eq(userProgress.userId, userId),
+          eq(userProgress.subject, subject)
+        ))
+        .orderBy(userProgress.subject);
     }
     
-    return await query.orderBy(userProgress.subject);
+    return await db.select().from(userProgress)
+      .where(eq(userProgress.userId, userId))
+      .orderBy(userProgress.subject);
   }
 
   async updateUserProgress(userId: string, subject: string, updates: Partial<InsertUserProgress>): Promise<UserProgress> {
@@ -434,7 +767,7 @@ export class DatabaseStorage implements IStorage {
 
   // Gamification operations
   async getUserBadges(userId: string): Promise<(UserBadge & { badge: Badge })[]> {
-    return await db
+    const results = await db
       .select({
         id: userBadges.id,
         userId: userBadges.userId,
@@ -445,6 +778,9 @@ export class DatabaseStorage implements IStorage {
       .from(userBadges)
       .leftJoin(badges, eq(userBadges.badgeId, badges.id))
       .where(eq(userBadges.userId, userId));
+    
+    // Filter out any results where badge is null (shouldn't happen with proper data)
+    return results.filter(result => result.badge !== null) as (UserBadge & { badge: Badge })[];
   }
 
   async awardBadge(userId: string, badgeId: number): Promise<UserBadge> {

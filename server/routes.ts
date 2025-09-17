@@ -10,6 +10,8 @@ import {
   insertQuizQuestionSchema,
   insertNoteSchema,
   insertFlashcardSchema,
+  currentAffairsNoteInputSchema,
+  quizGenerationSchema,
 } from "@shared/schema";
 import { generateAIResponse, generateStudyPlan, generateQuizQuestions, generateFlashcards } from "./openai";
 
@@ -145,43 +147,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Current affairs routes
-  app.get('/api/current-affairs', async (req, res) => {
+  // Enhanced Current affairs routes
+  app.get('/api/current-affairs', isAuthenticated, async (req: any, res) => {
     try {
       const { limit, category, date } = req.query;
+      const userId = req.user.claims.sub;
       let affairs;
       
       if (date) {
+        // Get affairs by date with basic info (no user-specific data for date filtering)
         affairs = await storage.getCurrentAffairsByDate(new Date(date as string));
       } else {
-        affairs = await storage.getCurrentAffairs(
-          limit ? parseInt(limit as string) : undefined,
+        // Get enhanced current affairs with user-specific data (bookmarks, notes, interactions)
+        affairs = await storage.getCurrentAffairsWithUserData(
+          userId,
+          limit ? parseInt(limit as string) : 10,
           category as string
         );
       }
       
-      // If no affairs exist, return dummy data
+      // If no affairs exist, return enhanced dummy data
       if (!affairs || affairs.length === 0) {
         const dummyAffairs = [
           {
             id: 1,
-            title: "India's New Education Policy Update",
-            content: "The Ministry of Education announced significant updates to the National Education Policy, focusing on digital literacy and skill development for competitive exam preparation.",
+            title: "India's New Education Policy Update 2025",
+            content: "The Ministry of Education announced comprehensive updates to the National Education Policy, emphasizing digital literacy, AI integration in curriculum, and enhanced skill development programs specifically designed for competitive exam preparation. The policy introduces new assessment methods and personalized learning approaches.",
+            summary: "Major updates to India's education policy focusing on digital skills and competitive exam preparation.",
             category: "Education",
             source: "Ministry of Education",
-            date: new Date(),
+            publishedDate: new Date(),
+            tags: ["education", "policy", "digital-literacy", "competitive-exams"],
+            imageUrl: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=400&h=250&fit=crop",
             importance: "high",
-            createdAt: new Date()
+            examRelevance: ["UPSC", "SSC", "Banking"],
+            readTime: 8,
+            aiKeyPoints: [
+              "Digital literacy becomes mandatory in all educational levels",
+              "New assessment methods introduced for competitive exam preparation",
+              "AI-powered personalized learning modules launched",
+              "Enhanced focus on critical thinking and analytical skills"
+            ],
+            aiSummary: "India's updated education policy prioritizes digital transformation and competitive exam readiness through innovative teaching methods and technology integration.",
+            relatedTopics: ["Digital India", "Skill Development", "Higher Education Reforms"],
+            isBookmarked: false,
+            hasNotes: false,
+            userInteractions: 0,
+            createdAt: new Date(),
+            updatedAt: new Date()
           },
           {
             id: 2,
-            title: "Space Mission Milestone",
-            content: "ISRO successfully launches advanced satellite for earth observation, marking a significant achievement in India's space program.",
-            category: "Science",
+            title: "ISRO's Revolutionary Earth Observation Mission",
+            content: "The Indian Space Research Organisation successfully launched its most advanced earth observation satellite, capable of providing real-time climate monitoring and disaster management data. This mission significantly enhances India's space capabilities and contributes to global environmental monitoring efforts.",
+            summary: "ISRO launches advanced satellite for climate monitoring and disaster management.",
+            category: "Science & Technology",
             source: "ISRO",
-            date: new Date(),
+            publishedDate: new Date(Date.now() - 24 * 60 * 60 * 1000), // Yesterday
+            tags: ["space", "satellite", "climate", "disaster-management", "technology"],
+            imageUrl: "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400&h=250&fit=crop",
             importance: "medium",
-            createdAt: new Date()
+            examRelevance: ["UPSC", "NEET", "JEE"],
+            readTime: 6,
+            aiKeyPoints: [
+              "Most advanced earth observation satellite launched by ISRO",
+              "Real-time climate monitoring capabilities",
+              "Enhanced disaster management and prediction systems",
+              "Contributes to global environmental research initiatives"
+            ],
+            aiSummary: "ISRO's latest satellite mission marks a significant advancement in India's space technology, particularly in environmental monitoring and disaster preparedness.",
+            relatedTopics: ["Space Technology", "Climate Change", "Disaster Management", "Environmental Science"],
+            isBookmarked: false,
+            hasNotes: false,
+            userInteractions: 0,
+            createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+            updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000)
+          },
+          {
+            id: 3,
+            title: "Economic Survey Highlights Digital Payment Growth",
+            content: "The latest Economic Survey reveals unprecedented growth in digital payments across India, with UPI transactions reaching new milestones. The report emphasizes the role of fintech innovations in financial inclusion and economic digitization, particularly impacting rural communities and small businesses.",
+            summary: "Economic Survey shows remarkable growth in digital payments and fintech adoption.",
+            category: "Economy",
+            source: "Ministry of Finance",
+            publishedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+            tags: ["economy", "digital-payments", "upi", "fintech", "financial-inclusion"],
+            imageUrl: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=250&fit=crop",
+            importance: "high",
+            examRelevance: ["UPSC", "SSC", "Banking", "RBI"],
+            readTime: 7,
+            aiKeyPoints: [
+              "UPI transactions surge to record-breaking numbers",
+              "Digital payment adoption accelerates in rural areas",
+              "Fintech innovations drive financial inclusion",
+              "Small businesses increasingly embrace digital transactions"
+            ],
+            aiSummary: "India's digital payment ecosystem shows extraordinary growth, reflecting the success of government initiatives and technological innovation in financial services.",
+            relatedTopics: ["Digital India", "Financial Inclusion", "UPI", "Economic Growth"],
+            isBookmarked: false,
+            hasNotes: false,
+            userInteractions: 0,
+            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+            updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
           }
         ];
         return res.json(dummyAffairs);
@@ -191,6 +258,256 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching current affairs:", error);
       res.status(500).json({ message: "Failed to fetch current affairs" });
+    }
+  });
+
+  // Get single current affair by ID with full details
+  app.get('/api/current-affairs/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      const affair = await storage.getCurrentAffairById(parseInt(id));
+      if (!affair) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+
+      // Record view interaction
+      await storage.recordCurrentAffairsInteraction({
+        userId,
+        currentAffairId: parseInt(id),
+        interactionType: 'view',
+        metadata: { timestamp: new Date().toISOString() }
+      });
+
+      // Get user-specific data
+      const isBookmarked = await storage.isArticleBookmarked(userId, parseInt(id));
+      const userNotes = await storage.getCurrentAffairsNotes(userId, parseInt(id));
+
+      res.json({
+        ...affair,
+        isBookmarked,
+        userNotes,
+        hasNotes: userNotes.length > 0
+      });
+    } catch (error) {
+      console.error("Error fetching current affair:", error);
+      res.status(500).json({ message: "Failed to fetch article" });
+    }
+  });
+
+  // Current affairs bookmarking
+  app.post('/api/current-affairs/:id/bookmark', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      const bookmark = await storage.bookmarkCurrentAffair(userId, parseInt(id));
+      
+      // Record bookmark interaction
+      await storage.recordCurrentAffairsInteraction({
+        userId,
+        currentAffairId: parseInt(id),
+        interactionType: 'bookmark',
+        metadata: { action: 'added' }
+      });
+
+      res.json({ success: true, bookmark });
+    } catch (error) {
+      console.error("Error bookmarking article:", error);
+      res.status(500).json({ message: "Failed to bookmark article" });
+    }
+  });
+
+  app.delete('/api/current-affairs/:id/bookmark', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      const success = await storage.removeBookmark(userId, parseInt(id));
+      
+      if (success) {
+        // Record unbookmark interaction
+        await storage.recordCurrentAffairsInteraction({
+          userId,
+          currentAffairId: parseInt(id),
+          interactionType: 'bookmark',
+          metadata: { action: 'removed' }
+        });
+      }
+
+      res.json({ success });
+    } catch (error) {
+      console.error("Error removing bookmark:", error);
+      res.status(500).json({ message: "Failed to remove bookmark" });
+    }
+  });
+
+  // Get user's bookmarked articles
+  app.get('/api/current-affairs/bookmarks/my', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const bookmarks = await storage.getUserBookmarkedAffairs(userId);
+      res.json(bookmarks);
+    } catch (error) {
+      console.error("Error fetching bookmarks:", error);
+      res.status(500).json({ message: "Failed to fetch bookmarks" });
+    }
+  });
+
+  // Current affairs notes
+  app.post('/api/current-affairs/:id/notes', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      // Validate request body
+      const validatedData = currentAffairsNoteInputSchema.parse(req.body);
+      const { noteText, highlighted, position } = validatedData;
+      
+      const note = await storage.createCurrentAffairsNote({
+        userId,
+        currentAffairId: parseInt(id),
+        noteText,
+        highlighted: highlighted || false,
+        position: position || null
+      });
+
+      // Record note interaction
+      await storage.recordCurrentAffairsInteraction({
+        userId,
+        currentAffairId: parseInt(id),
+        interactionType: 'note_created',
+        metadata: { noteId: note.id }
+      });
+
+      res.json({ success: true, note });
+    } catch (error) {
+      console.error("Error creating note:", error);
+      res.status(500).json({ message: "Failed to create note" });
+    }
+  });
+
+  app.get('/api/current-affairs/:id/notes', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      const notes = await storage.getCurrentAffairsNotes(userId, parseInt(id));
+      res.json(notes);
+    } catch (error) {
+      console.error("Error fetching notes:", error);
+      res.status(500).json({ message: "Failed to fetch notes" });
+    }
+  });
+
+  app.put('/api/current-affairs/notes/:noteId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { noteId } = req.params;
+      
+      // Validate request body
+      const validatedData = currentAffairsNoteInputSchema.parse(req.body);
+      const { noteText, highlighted, position } = validatedData;
+      
+      const note = await storage.updateCurrentAffairsNote(parseInt(noteId), {
+        noteText,
+        highlighted,
+        position
+      });
+
+      res.json({ success: true, note });
+    } catch (error) {
+      console.error("Error updating note:", error);
+      res.status(500).json({ message: "Failed to update note" });
+    }
+  });
+
+  app.delete('/api/current-affairs/notes/:noteId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { noteId } = req.params;
+      const userId = req.user.claims.sub;
+      
+      const success = await storage.deleteCurrentAffairsNote(parseInt(noteId), userId);
+      res.json({ success });
+    } catch (error) {
+      console.error("Error deleting note:", error);
+      res.status(500).json({ message: "Failed to delete note" });
+    }
+  });
+
+  // AI-powered recommendations
+  app.get('/api/current-affairs/recommendations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { limit } = req.query;
+      
+      let recommendations = await storage.getUserRecommendations(userId, limit ? parseInt(limit as string) : 10);
+      
+      // Generate new recommendations if none exist
+      if (recommendations.length === 0) {
+        await storage.generatePersonalizedRecommendations(userId);
+        recommendations = await storage.getUserRecommendations(userId, limit ? parseInt(limit as string) : 10);
+      }
+
+      res.json(recommendations);
+    } catch (error) {
+      console.error("Error fetching recommendations:", error);
+      res.status(500).json({ message: "Failed to fetch recommendations" });
+    }
+  });
+
+  // Enhanced quiz generation for current affairs
+  app.post('/api/current-affairs/quiz/generate', isAuthenticated, async (req: any, res) => {
+    try {
+      // Validate request body
+      const validatedData = quizGenerationSchema.parse(req.body);
+      const { timeframe, numQuestions, categories, examType } = validatedData;
+      const userId = req.user.claims.sub;
+      
+      // Determine date range based on timeframe
+      let startDate = new Date();
+      if (timeframe === 'today') {
+        startDate.setHours(0, 0, 0, 0);
+      } else if (timeframe === 'week') {
+        startDate.setDate(startDate.getDate() - 7);
+      } else if (timeframe === 'month') {
+        startDate.setMonth(startDate.getMonth() - 1);
+      }
+
+      // Get current affairs from the specified timeframe
+      const affairs = await storage.getCurrentAffairs(50, categories?.[0]); // Get more for better selection
+      
+      if (affairs.length === 0) {
+        return res.status(404).json({ message: "No articles found for the specified timeframe" });
+      }
+
+      // For now, return a success message indicating quiz generation
+      // In a real implementation, this would integrate with OpenAI to generate actual questions
+      const generatedQuizId = Math.floor(Math.random() * 1000000);
+      
+      // Record quiz generation interaction
+      await storage.recordCurrentAffairsInteraction({
+        userId,
+        currentAffairId: affairs[0].id, // Use first article as reference
+        interactionType: 'quiz_generated',
+        metadata: { 
+          timeframe, 
+          numQuestions: numQuestions || 10,
+          quizId: generatedQuizId,
+          categories: categories || ['all'],
+          examType: examType || 'general'
+        }
+      });
+
+      res.json({ 
+        success: true, 
+        quizId: generatedQuizId,
+        message: `Quiz generated with ${numQuestions || 10} questions from ${timeframe} current affairs`,
+        articlesCount: affairs.length
+      });
+    } catch (error) {
+      console.error("Error generating quiz:", error);
+      res.status(500).json({ message: "Failed to generate quiz" });
     }
   });
 

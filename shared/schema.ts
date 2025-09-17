@@ -75,7 +75,57 @@ export const currentAffairs = pgTable("current_affairs", {
   source: varchar("source"),
   publishedDate: timestamp("published_date").notNull(),
   tags: text("tags").array(),
+  imageUrl: varchar("image_url"), // Thumbnail image for the article
+  importance: varchar("importance").default("medium"), // high, medium, low
+  examRelevance: text("exam_relevance").array(), // NEET, UPSC, SSC, JEE
+  readTime: integer("read_time"), // estimated reading time in minutes
+  aiKeyPoints: jsonb("ai_key_points"), // AI-generated key points
+  aiSummary: text("ai_summary"), // Enhanced AI summary
+  relatedTopics: text("related_topics").array(),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User bookmarks for current affairs
+export const currentAffairsBookmarks = pgTable("current_affairs_bookmarks", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  currentAffairId: integer("current_affair_id").notNull().references(() => currentAffairs.id),
+  bookmarkedAt: timestamp("bookmarked_at").defaultNow(),
+});
+
+// User interactions with current affairs (views, time spent, etc.)
+export const currentAffairsInteractions = pgTable("current_affairs_interactions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  currentAffairId: integer("current_affair_id").notNull().references(() => currentAffairs.id),
+  interactionType: varchar("interaction_type").notNull(), // view, bookmark, share, quiz_generated
+  metadata: jsonb("metadata"), // Additional data like time spent, scroll percentage
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// AI-generated personalized recommendations
+export const currentAffairsRecommendations = pgTable("current_affairs_recommendations", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  currentAffairId: integer("current_affair_id").notNull().references(() => currentAffairs.id),
+  recommendationType: varchar("recommendation_type").notNull(), // trending, exam_relevant, weakness_focused
+  score: numeric("score").notNull(), // relevance score 0-1
+  reason: text("reason"), // Why this was recommended
+  generatedAt: timestamp("generated_at").defaultNow(),
+  viewed: boolean("viewed").default(false),
+});
+
+// User notes on current affairs articles
+export const currentAffairsNotes = pgTable("current_affairs_notes", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  currentAffairId: integer("current_affair_id").notNull().references(() => currentAffairs.id),
+  noteText: text("note_text").notNull(),
+  highlighted: boolean("highlighted").default(false), // Whether this is a highlighted section
+  position: jsonb("position"), // Position in the article for contextual notes
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Vocabulary words
@@ -227,6 +277,18 @@ export type StudyPlan = typeof studyPlans.$inferSelect;
 export type InsertCurrentAffair = typeof currentAffairs.$inferInsert;
 export type CurrentAffair = typeof currentAffairs.$inferSelect;
 
+export type InsertCurrentAffairsBookmark = typeof currentAffairsBookmarks.$inferInsert;
+export type CurrentAffairsBookmark = typeof currentAffairsBookmarks.$inferSelect;
+
+export type InsertCurrentAffairsInteraction = typeof currentAffairsInteractions.$inferInsert;
+export type CurrentAffairsInteraction = typeof currentAffairsInteractions.$inferSelect;
+
+export type InsertCurrentAffairsRecommendation = typeof currentAffairsRecommendations.$inferInsert;
+export type CurrentAffairsRecommendation = typeof currentAffairsRecommendations.$inferSelect;
+
+export type InsertCurrentAffairsNote = typeof currentAffairsNotes.$inferInsert;
+export type CurrentAffairsNote = typeof currentAffairsNotes.$inferSelect;
+
 export type InsertVocabulary = typeof vocabulary.$inferInsert;
 export type Vocabulary = typeof vocabulary.$inferSelect;
 
@@ -281,6 +343,28 @@ export const insertStudyPlanSchema = createInsertSchema(studyPlans).omit({
 export const insertCurrentAffairSchema = createInsertSchema(currentAffairs).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCurrentAffairsBookmarkSchema = createInsertSchema(currentAffairsBookmarks).omit({
+  id: true,
+  bookmarkedAt: true,
+});
+
+export const insertCurrentAffairsInteractionSchema = createInsertSchema(currentAffairsInteractions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCurrentAffairsRecommendationSchema = createInsertSchema(currentAffairsRecommendations).omit({
+  id: true,
+  generatedAt: true,
+});
+
+export const insertCurrentAffairsNoteSchema = createInsertSchema(currentAffairsNotes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
 export const insertVocabularySchema = createInsertSchema(vocabulary).omit({
@@ -302,4 +386,18 @@ export const insertNoteSchema = createInsertSchema(notes).omit({
 export const insertFlashcardSchema = createInsertSchema(flashcards).omit({
   id: true,
   createdAt: true,
+});
+
+// Additional validation schemas for API endpoints
+export const currentAffairsNoteInputSchema = z.object({
+  noteText: z.string().min(1, "Note text is required"),
+  highlighted: z.boolean().optional().default(false),
+  position: z.any().optional().nullable(),
+});
+
+export const quizGenerationSchema = z.object({
+  timeframe: z.enum(['today', 'week', 'month']).default('week'),
+  numQuestions: z.number().int().min(1).max(50).default(10),
+  categories: z.array(z.string()).optional(),
+  examType: z.string().optional().default('general'),
 });
